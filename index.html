@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hitting Time (Global Heuristic) - Network Node Similarity</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-dark">
+  <div class="app-container" id="appContainer">
+    <!-- TOP NAVIGATION / HEADER -->
+    <header class="top-header">
+      <div class="brand-section">
+        <div class="badge">SNA • GLOBAL HEURISTIC</div>
+        <h1 class="main-title">HITTING TIME</h1>
+        <p class="subtitle">Global Heuristic • Random Walk Based Node Similarity</p>
+      </div>
+
+      <div class="header-actions">
+        <!-- Educational Mode Toggle -->
+        <div class="segmented-control" role="group" aria-label="Educational Mode">
+          <button id="btnSimpleMode" class="btn-toggle active" title="Show core graph and live metrics">Simple Mode</button>
+          <button id="btnFormulaMode" class="btn-toggle" title="Show linear system and transition equations">Formula Mode</button>
+        </div>
+
+        <!-- Presentation Mode Toggle -->
+        <button id="btnPresentationMode" class="btn-action btn-presentation">
+          <span class="icon">⛶</span> Presentation Mode
+        </button>
+      </div>
+    </header>
+
+    <!-- INTERACTIVE CONTROL BAR -->
+    <section class="control-bar card">
+      <div class="node-selectors">
+        <div class="selector-group">
+          <label for="startNodeSelect"><span class="indicator start-ind">●</span> START NODE (x):</label>
+          <select id="startNodeSelect" class="styled-select">
+            <option value="A" selected>Node A</option>
+            <option value="B">Node B</option>
+            <option value="C">Node C</option>
+            <option value="D">Node D</option>
+            <option value="E">Node E</option>
+          </select>
+        </div>
+
+        <div class="direction-arrow">➔</div>
+
+        <div class="selector-group">
+          <label for="targetNodeSelect"><span class="indicator target-ind">●</span> TARGET NODE (y):</label>
+          <select id="targetNodeSelect" class="styled-select">
+            <option value="A">Node A</option>
+            <option value="B">Node B</option>
+            <option value="C" selected>Node C</option>
+            <option value="D">Node D</option>
+            <option value="E">Node E</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="model-mode-selector">
+        <label for="walkModelSelect"><span class="indicator">⚙</span> RANDOM WALK DYNAMICS:</label>
+        <select id="walkModelSelect" class="styled-select select-compact">
+          <option value="classroom" selected>Classroom Model (Forward from B: C,D,E = 1/3 each ➔ HT=3.33)</option>
+          <option value="full">Full Markov Random Walk (Uniform 4-way at B: A,C,D,E = 1/4 each ➔ HT=8.00)</option>
+        </select>
+      </div>
+
+      <div class="sim-actions">
+        <button id="btnRunWalk" class="btn-primary">
+          <span class="play-icon">▶</span> RUN RANDOM WALK
+        </button>
+        <button id="btnPauseWalk" class="btn-secondary" style="display:none;">
+          <span>⏸</span> PAUSE
+        </button>
+        <button id="btnResetWalk" class="btn-secondary">
+          <span>↻</span> RESET
+        </button>
+
+        <div class="speed-control">
+          <label for="speedSlider">Speed:</label>
+          <input type="range" id="speedSlider" min="200" max="1200" step="100" value="600">
+          <span id="speedLabel" class="speed-label">Normal</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN TWO-COLUMN DASHBOARD GRID -->
+    <main class="dashboard-grid">
+      <!-- LEFT COLUMN: NETWORK GRAPH & WALK MONITOR -->
+      <div class="graph-column card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2 class="card-title">NETWORK TOPOLOGY & PROBABILITIES</h2>
+            <span class="card-tag">Undirected Graph G=(V,E) • Uniform Surfer</span>
+          </div>
+          <div class="graph-legend">
+            <span class="leg-item"><span class="leg-dot start"></span> Start (x)</span>
+            <span class="leg-item"><span class="leg-dot target"></span> Target (y)</span>
+            <span class="leg-item"><span class="leg-dot visited"></span> Visited</span>
+            <span class="leg-item"><span class="leg-dot shortest"></span> Direct / Min Path</span>
+          </div>
+        </div>
+
+        <!-- SVG Network Graph Canvas -->
+        <div class="svg-wrapper" id="svgContainer">
+          <svg id="networkSvg" viewBox="0 0 680 440" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <!-- Glow Filters -->
+              <filter id="glowStart" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <filter id="glowTarget" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <filter id="glowParticle" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+
+              <!-- Arrow Markers for random walk paths -->
+              <marker id="arrow" viewBox="0 0 10 10" refX="24" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8" />
+              </marker>
+              <marker id="arrowVisited" viewBox="0 0 10 10" refX="24" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#a855f7" />
+              </marker>
+            </defs>
+
+            <!-- Edge Lines Layer -->
+            <g id="edgesLayer"></g>
+
+            <!-- Walk Trace Layer (arrows, highlight paths) -->
+            <g id="walkTraceLayer"></g>
+
+            <!-- Probability Badges Layer on edges -->
+            <g id="probLabelsLayer"></g>
+
+            <!-- Nodes Layer -->
+            <g id="nodesLayer"></g>
+
+            <!-- Active Surfer Particle Layer -->
+            <g id="particleLayer">
+              <circle id="surferParticle" r="9" cx="-100" cy="-100" fill="#38bdf8" filter="url(#glowParticle)" style="display:none;" />
+              <circle id="particlePulse" r="14" cx="-100" cy="-100" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0" style="display:none;" />
+            </g>
+          </svg>
+        </div>
+
+        <!-- LIVE RANDOM WALK STATUS BAR -->
+        <div class="walk-status-panel">
+          <div class="walk-meta">
+            <div class="walk-step-count">
+              <span class="label">WALK STEPS:</span>
+              <span class="value" id="currentStepCount">0</span>
+            </div>
+            <div class="walk-status-badge" id="walkStatusBadge">READY TO RUN</div>
+          </div>
+          <div class="walk-path-display">
+            <span class="path-label">Path Traversed:</span>
+            <span class="path-sequence" id="walkPathText">A (Awaiting walk)</span>
+          </div>
+          <div class="walk-callout-note">
+            <span class="callout-icon">💡</span>
+            <span class="callout-text"><strong>Sample Path ≠ Hitting Time:</strong> A single random walk run may take 2, 6, or 14 steps. Hitting Time $HT(x,y)$ is the mathematical <em>expected value</em> averaged over all infinite stochastic trajectories!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: LIVE CALCULATION & SCORES -->
+      <div class="metrics-column">
+        <!-- LIVE CALCULATION HERO CARD -->
+        <div class="card live-calc-card">
+          <div class="card-header border-bottom">
+            <h2 class="card-title">LIVE CALCULATION</h2>
+            <span class="node-pair-badge" id="nodePairBadge">A ➔ C</span>
+          </div>
+
+          <div class="metrics-hero-grid">
+            <!-- Expected Hitting Time -->
+            <div class="metric-box primary-box">
+              <div class="metric-top">
+                <span class="metric-title">EXPECTED HITTING TIME</span>
+                <span class="metric-symbol">HT(x, y)</span>
+              </div>
+              <div class="metric-val" id="htValDisplay">3.33</div>
+              <div class="metric-unit">expected random-walk steps</div>
+              <div class="metric-desc">Expected time to hit target for the first time</div>
+            </div>
+
+            <!-- Hitting Time Score -->
+            <div class="metric-box score-box">
+              <div class="metric-top">
+                <span class="metric-title">HITTING TIME SCORE</span>
+                <span class="metric-symbol">S_HT(x, y) = −HT(x, y)</span>
+              </div>
+              <div class="metric-val" id="scoreValDisplay">−3.33</div>
+              <div class="metric-unit">proximity score (closer to 0 is better)</div>
+              <div class="metric-desc">Inverse relation: smaller time = higher similarity</div>
+            </div>
+
+            <!-- Normalized Hitting Time Score -->
+            <div class="metric-box norm-box">
+              <div class="metric-top">
+                <span class="metric-title">NORMALIZED SCORE</span>
+                <span class="metric-symbol">S_Norm = −HT(x, y) × π_y</span>
+              </div>
+              <div class="metric-val" id="normScoreValDisplay">−0.667</div>
+              <div class="metric-formula-sub" id="normCalcSub">−3.33 × 0.20 = −0.667</div>
+              <div class="metric-desc">Accounts for target node centrality / degree bias</div>
+            </div>
+          </div>
+
+          <!-- PAGERANK / STATIONARY DISTRIBUTION INTERACTIVE INPUTS -->
+          <div class="pagerank-subpanel">
+            <div class="pr-title-row">
+              <span class="pr-title">Stationary Distribution / Target PageRank (&pi;<sub>y</sub>):</span>
+              <button class="btn-link" id="btnResetPR" title="Reset to prompt default classroom values">Reset to Default &pi;</button>
+            </div>
+            <div class="pr-inputs-grid">
+              <div class="pr-input-item" id="prGroupA">
+                <label for="prA">&pi;<sub>A</sub></label>
+                <input type="number" id="prA" min="0.01" max="1.0" step="0.01" value="0.15" class="pr-input">
+              </div>
+              <div class="pr-input-item" id="prGroupB">
+                <label for="prB">&pi;<sub>B</sub> (Hub)</label>
+                <input type="number" id="prB" min="0.01" max="1.0" step="0.01" value="0.35" class="pr-input">
+              </div>
+              <div class="pr-input-item" id="prGroupC">
+                <label for="prC">&pi;<sub>C</sub></label>
+                <input type="number" id="prC" min="0.01" max="1.0" step="0.01" value="0.20" class="pr-input">
+              </div>
+              <div class="pr-input-item" id="prGroupD">
+                <label for="prD">&pi;<sub>D</sub></label>
+                <input type="number" id="prD" min="0.01" max="1.0" step="0.01" value="0.18" class="pr-input">
+              </div>
+              <div class="pr-input-item" id="prGroupE">
+                <label for="prE">&pi;<sub>E</sub></label>
+                <input type="number" id="prE" min="0.01" max="1.0" step="0.01" value="0.12" class="pr-input">
+              </div>
+            </div>
+            <div class="pr-helper-note">
+              Default values from classroom syllabus (&pi;<sub>C</sub> = 0.20, &pi;<sub>B</sub> = 0.35, etc.). You can edit any value live to see S_Norm update!
+            </div>
+          </div>
+        </div>
+
+        <!-- SYSTEM EQUATION & STEP-BY-STEP CALCULATION -->
+        <div class="card calculation-details-card" id="calculationDetailsCard">
+          <div class="card-header collapsible-header" id="btnToggleCalculation">
+            <div class="card-title-group">
+              <h3 class="card-title">STEP-BY-STEP MATHEMATICAL DERIVATION</h3>
+              <span class="badge-accent">First-Step Analysis</span>
+            </div>
+            <span class="chevron" id="calcChevron">▼</span>
+          </div>
+
+          <div class="calc-content" id="calcContent">
+            <!-- Mathematical Definition -->
+            <div class="math-intro-block">
+              <div class="math-formula-header">First-Step Markov Recurrence Formulation:</div>
+              <div class="math-formula-row">
+                <span class="formula-chip">HT(y, y) = 0</span>
+                <span class="formula-chip">HT(x, y) = 1 + &sum;<sub>z &isin; N(x)</sub> P(x, z) &middot; HT(z, y) &nbsp; (&forall; x &ne; y)</span>
+              </div>
+              <p class="math-expl">
+                From node <em>x</em>, any random surfer expends <strong>1 step</strong> to reach an adjacent neighbor <em>z</em> with probability <em>P(x,z) = 1 / deg(x)</em>, and subsequently expects <em>HT(z,y)</em> additional steps to hit target <em>y</em>.
+              </p>
+            </div>
+
+            <!-- Dynamic Steps Generated by JS -->
+            <div class="dynamic-steps-list" id="dynamicStepsContainer">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- COMPARISON TABLE PANEL -->
+    <section class="card comparison-card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <h2 class="card-title">COMPARE ALL TARGET NODES FROM START (<span id="compareStartNode">A</span>)</h2>
+          <span class="card-tag">Ranking candidate nodes by global random-walk proximity</span>
+        </div>
+        <div class="badge-info">Best candidate highlighted</div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="comparison-table" id="comparisonTable">
+          <thead>
+            <tr>
+              <th>Target (y)</th>
+              <th>Shortest Path</th>
+              <th>Expected Hitting Time HT(x,y)</th>
+              <th>Hitting Score S_HT = −HT</th>
+              <th>Stationary &pi;<sub>y</sub></th>
+              <th>Normalized Score S_Norm</th>
+              <th>Proximity Rank</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="comparisonTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- EDUCATIONAL INTUITION & KEY TAKEAWAYS -->
+    <section class="card intuition-card">
+      <h2 class="card-title">CORE INTUITION & THEORETICAL SUMMARY</h2>
+      <div class="intuition-flow">
+        <div class="flow-step">
+          <div class="step-icon">⏱️</div>
+          <div class="step-title">LOWER HITTING TIME</div>
+          <div class="step-sub">Fewer random transitions needed</div>
+        </div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-step">
+          <div class="step-icon">🎯</div>
+          <div class="step-title">EASIER TO REACH</div>
+          <div class="step-sub">High probability flow through graph</div>
+        </div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-step">
+          <div class="step-icon">🔗</div>
+          <div class="step-title">CLOSER / MORE SIMILAR</div>
+          <div class="step-sub">Stronger structural community bond</div>
+        </div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-step highlight-step">
+          <div class="step-icon">⭐</div>
+          <div class="step-title">HIGHER SCORE S_HT</div>
+          <div class="step-sub">S_HT is closer to 0 (e.g. −1.0 > −3.33)</div>
+        </div>
+      </div>
+
+      <div class="key-notes-grid">
+        <div class="key-note-card">
+          <h4>Asymmetry of Hitting Time</h4>
+          <p>
+            Unlike undirected shortest path distance, <strong>Hitting Time is asymmetric</strong>: $HT(x, y) \ne HT(y, x)$ in general.
+            Hitting a peripheral node from a dense hub is often much slower than hitting the hub from the periphery!
+          </p>
+        </div>
+        <div class="key-note-card">
+          <h4>Global vs. Local Heuristic</h4>
+          <p>
+            Common Neighbors and Jaccard only consider 2-hop local topologies. Hitting Time is a <strong>Global Heuristic</strong> that explores all possible infinite paths, capturing the global flow and bottlenecks of the entire network.
+          </p>
+        </div>
+        <div class="key-note-card">
+          <h4>Why Normalized Hitting Time?</h4>
+          <p>
+            High-degree hubs (like Node B) have a high stationary distribution $\pi_B$, making them naturally easier to hit by chance. Multiplying by $\pi_y$ balances this bias so rare targets aren't unjustly penalized.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <div>Educational Interactive Visualization • Social Network Analysis & Graph Algorithms</div>
+      <div class="footer-meta">Self-contained • No external dependencies • Instant local calculation</div>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
