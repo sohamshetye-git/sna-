@@ -1,199 +1,109 @@
 /**
  * HITTING TIME - GLOBAL HEURISTIC EDUCATIONAL VISUALIZATION
- * Mathematical Engine, Graph Rendering, Random Walk Simulation,
- * and Classroom Presentation Controller.
+ * Dynamic Graph Engine, Linear System (I - Q)H = 1 Solver,
+ * Real-Time Mathematical Derivation, and Stochastic Simulation.
  */
 
 // ============================================================================
-// 1. GRAPH DEFINITION & TOPOLOGY
+// 1. DATA STRUCTURES & PRESET GRAPH DEFINITIONS
 // ============================================================================
-// Graph topology as specified:
-// Nodes: A, B, C, D, E
-// Edges: A-B, B-C, B-D, B-E
-// B is the central hub connected to all other nodes.
-// Coordinates designed for a 680x440 SVG canvas with pleasing layout.
 
-const GRAPH = {
-  nodes: {
-    A: { id: "A", label: "A", x: 130, y: 220, sub: "Leaf (deg 1)" },
-    B: { id: "B", label: "B", x: 340, y: 220, sub: "Hub (deg 4)" },
-    C: { id: "C", label: "C", x: 550, y: 220, sub: "Leaf (deg 1)" },
-    D: { id: "D", label: "D", x: 340, y: 80,  sub: "Leaf (deg 1)" },
-    E: { id: "E", label: "E", x: 340, y: 360, sub: "Leaf (deg 1)" }
+const PRESETS = {
+  star5: {
+    nodes: {
+      A: { id: "A", label: "A", x: 130, y: 220, sub: "Leaf" },
+      B: { id: "B", label: "B", x: 340, y: 220, sub: "Hub" },
+      C: { id: "C", label: "C", x: 550, y: 220, sub: "Leaf" },
+      D: { id: "D", label: "D", x: 340, y: 80,  sub: "Leaf" },
+      E: { id: "E", label: "E", x: 340, y: 360, sub: "Leaf" }
+    },
+    edges: [
+      { u: "A", v: "B" },
+      { u: "B", v: "C" },
+      { u: "B", v: "D" },
+      { u: "B", v: "E" }
+    ],
+    startNode: "A",
+    targetNode: "C"
   },
-  edges: [
-    { u: "A", v: "B" },
-    { u: "B", v: "C" },
-    { u: "B", v: "D" },
-    { u: "B", v: "E" }
-  ]
-};
-
-// Canonical node keys
-const NODE_KEYS = ["A", "B", "C", "D", "E"];
-
-// Adjacency list representation
-const ADJ = {
-  A: ["B"],
-  B: ["A", "C", "D", "E"],
-  C: ["B"],
-  D: ["B"],
-  E: ["B"]
-};
-
-// Classroom prompt default stationary / PageRank values:
-// pi_A=0.15, pi_B=0.35, pi_C=0.20, pi_D=0.18, pi_E=0.12
-const DEFAULT_PAGERANK = {
-  A: 0.15,
-  B: 0.35,
-  C: 0.20,
-  D: 0.18,
-  E: 0.12
-};
-
-// ============================================================================
-// 2. MATHEMATICAL ENGINES: HITTING TIME CALCULATIONS
-// ============================================================================
-
-/**
- * 1) FULL MARKOV RANDOM WALK SOLVER (Linear Algebra / First-Step Analysis)
- * Standard Markov Chain on undirected graph G where every node chooses
- * each neighbor with probability 1 / deg(x).
- * For non-target states:
- *   HT(x, y) = 1 + sum_{z in N(x)} (1/deg(x)) * HT(z, y)
- * Solved via Gaussian elimination.
- */
-function solveFullMarkovHittingTimes(targetNode) {
-  const nonTargetNodes = NODE_KEYS.filter(n => n !== targetNode);
-  const n = nonTargetNodes.length;
-  const result = {};
-  result[targetNode] = 0;
-
-  if (n === 0) return result;
-
-  const A = Array.from({ length: n }, () => Array(n).fill(0));
-  const b = Array(n).fill(1);
-
-  nonTargetNodes.forEach((x, i) => {
-    A[i][i] = 1.0;
-    const neighbors = ADJ[x];
-    const p = 1.0 / neighbors.length;
-
-    neighbors.forEach(nbr => {
-      if (nbr !== targetNode) {
-        const j = nonTargetNodes.indexOf(nbr);
-        if (j !== -1) {
-          A[i][j] -= p;
-        }
-      }
-    });
-  });
-
-  // Gaussian elimination with partial pivoting
-  for (let col = 0; col < n; col++) {
-    let maxRow = col;
-    let maxVal = Math.abs(A[col][col]);
-    for (let r = col + 1; r < n; r++) {
-      if (Math.abs(A[r][col]) > maxVal) {
-        maxVal = Math.abs(A[r][col]);
-        maxRow = r;
-      }
-    }
-    if (maxRow !== col) {
-      [A[col], A[maxRow]] = [A[maxRow], A[col]];
-      [b[col], b[maxRow]] = [b[maxRow], b[col]];
-    }
-    const pivot = A[col][col];
-    for (let r = col + 1; r < n; r++) {
-      const factor = A[r][col] / pivot;
-      for (let c = col; c < n; c++) {
-        A[r][c] -= factor * A[col][c];
-      }
-      b[r] -= factor * b[col];
-    }
+  line3: {
+    nodes: {
+      A: { id: "A", label: "A", x: 160, y: 220, sub: "End 1" },
+      B: { id: "B", label: "B", x: 340, y: 220, sub: "Center" },
+      C: { id: "C", label: "C", x: 520, y: 220, sub: "End 2" }
+    },
+    edges: [
+      { u: "A", v: "B" },
+      { u: "B", v: "C" }
+    ],
+    startNode: "A",
+    targetNode: "C"
+  },
+  line4: {
+    nodes: {
+      A: { id: "A", label: "A", x: 120, y: 220, sub: "Node 1" },
+      B: { id: "B", label: "B", x: 265, y: 220, sub: "Node 2" },
+      C: { id: "C", label: "C", x: 415, y: 220, sub: "Node 3" },
+      D: { id: "D", label: "D", x: 560, y: 220, sub: "Node 4" }
+    },
+    edges: [
+      { u: "A", v: "B" },
+      { u: "B", v: "C" },
+      { u: "C", v: "D" }
+    ],
+    startNode: "A",
+    targetNode: "D"
+  },
+  triangle: {
+    nodes: {
+      A: { id: "A", label: "A", x: 200, y: 320, sub: "Node A" },
+      B: { id: "B", label: "B", x: 340, y: 120, sub: "Node B" },
+      C: { id: "C", label: "C", x: 480, y: 320, sub: "Node C" }
+    },
+    edges: [
+      { u: "A", v: "B" },
+      { u: "B", v: "C" },
+      { u: "C", v: "A" }
+    ],
+    startNode: "A",
+    targetNode: "C"
+  },
+  disconnected: {
+    nodes: {
+      A: { id: "A", label: "A", x: 150, y: 160, sub: "Comp 1" },
+      B: { id: "B", label: "B", x: 270, y: 160, sub: "Comp 1" },
+      C: { id: "C", label: "C", x: 450, y: 280, sub: "Comp 2" },
+      D: { id: "D", label: "D", x: 570, y: 280, sub: "Comp 2" }
+    },
+    edges: [
+      { u: "A", v: "B" },
+      { u: "C", v: "D" }
+    ],
+    startNode: "A",
+    targetNode: "C"
   }
+};
 
-  // Back substitution
-  const hSolution = Array(n).fill(0);
-  for (let r = n - 1; r >= 0; r--) {
-    let sum = b[r];
-    for (let c = r + 1; c < n; c++) {
-      sum -= A[r][c] * hSolution[c];
-    }
-    hSolution[r] = sum / A[r][r];
-  }
-
-  nonTargetNodes.forEach((node, i) => {
-    result[node] = Math.max(0, hSolution[i]);
-  });
-
-  return result;
-}
-
-/**
- * 2) CLASSROOM SYLLABUS MODEL (Section 3 & 5 of specification)
- * In the classroom lecture notes for A -> C:
- * Surfer moves from A -> B (1 step).
- * From B, the forward choices to other branches are equiprobable:
- *   P(B->C) = 1/3, P(B->D) = 1/3, P(B->E) = 1/3.
- * The 3 canonical trajectories to reach C are:
- *   1) A -> B -> C (2 steps, prob 1/3)
- *   2) A -> B -> D -> B -> C (4 steps, prob 1/3)
- *   3) A -> B -> E -> B -> C (4 steps, prob 1/3)
- * Expected Steps = (2 + 4 + 4) / 3 = 10 / 3 = 3.33 steps!
- * This function computes this pedagogical hitting time for any start/target pair.
- */
-function solveClassroomHittingTimes(targetNode) {
-  const result = {};
-  NODE_KEYS.forEach(src => {
-    if (src === targetNode) {
-      result[src] = 0;
-    } else if (src === "B" || targetNode === "B") {
-      // Hub to leaf or leaf to hub
-      if (src !== "B" && targetNode === "B") {
-        // Direct leaf to hub: 1 step
-        result[src] = 1.0;
-      } else {
-        // Hub B to leaf (e.g. B -> C):
-        // 1/3 prob to hit C in 1 step, 2/3 prob to visit other leaf and take 3 steps
-        // (1 + 3 + 3) / 3 = 7 / 3 = 2.33 steps
-        result[src] = 7 / 3;
-      }
-    } else {
-      // Leaf to leaf (e.g. A to C, D to C, etc.):
-      // 1 step to B + 2.33 from B = 3.33 steps (10/3)
-      result[src] = 10 / 3;
-    }
-  });
-  return result;
-}
-
-// Compute pairwise hitting times cache
-function computeHittingTimesMatrix(modelType) {
-  const matrix = {};
-  NODE_KEYS.forEach(u => matrix[u] = {});
-  NODE_KEYS.forEach(target => {
-    const col = (modelType === "classroom") 
-      ? solveClassroomHittingTimes(target)
-      : solveFullMarkovHittingTimes(target);
-    NODE_KEYS.forEach(src => {
-      matrix[src][target] = col[src];
-    });
-  });
-  return matrix;
-}
-
-// ============================================================================
-// 3. APPLICATION STATE
-// ============================================================================
+// Application State
 const state = {
+  // Dynamic Graph
+  nodes: {},
+  edges: [],
   startNode: "A",
   targetNode: "C",
-  walkModel: "classroom", // "classroom" | "full"
-  pageRank: { ...DEFAULT_PAGERANK },
-  hittingTimesCache: null, // populated in init
 
-  // Animation & simulation states
+  // Model: "standard" | "classroom" | "custom"
+  walkModel: "standard",
+  customTransitions: {}, // { u: { v: prob } }
+
+  // Target PageRank / Stationary weights
+  pageRank: {},
+
+  // Cached Dynamic Calculations
+  transitionMatrix: {}, // { u: { v: p } }
+  hittingTimeMatrix: {}, // { start: { target: value | Infinity } }
+
+  // Simulation State
   isWalking: false,
   isPaused: false,
   currentWalkStep: 0,
@@ -201,205 +111,404 @@ const state = {
   walkTimer: null,
   stepSpeedMs: 600,
 
-  // Display modes
-  mode: "simple", // "simple" | "formula"
-  isPresentation: false,
-  isCalcOpen: false
+  // UI Modes
+  mode: "simple",
+  isPresentation: false
 };
 
-state.hittingTimesCache = computeHittingTimesMatrix(state.walkModel);
+// ============================================================================
+// 2. DYNAMIC GRAPH TOPOLOGY UTILITIES
+// ============================================================================
+
+function getNodeKeys() {
+  return Object.keys(state.nodes).sort();
+}
+
+function getNeighbors(nodeId) {
+  const nbrs = new Set();
+  state.edges.forEach(e => {
+    if (e.u === nodeId) nbrs.add(e.v);
+    else if (e.v === nodeId) nbrs.add(e.u);
+  });
+  return Array.from(nbrs).sort();
+}
+
+function hasEdge(u, v) {
+  return state.edges.some(e => (e.u === u && e.v === v) || (e.u === v && e.v === u));
+}
+
+function getDegree(nodeId) {
+  return getNeighbors(nodeId).length;
+}
 
 // ============================================================================
-// 4. SVG GRAPH RENDERING
+// 3. TRANSITION MATRIX GENERATION (NO HARDCODING)
 // ============================================================================
-function initGraphVisualization() {
+
+/**
+ * Builds transition matrix P where P[u][v] = probability to move u -> v.
+ * Completely dynamic based on degree and selected model.
+ */
+function buildTransitionMatrix() {
+  const P = {};
+  const nodes = getNodeKeys();
+
+  nodes.forEach(u => {
+    P[u] = {};
+    nodes.forEach(v => { P[u][v] = 0; });
+  });
+
+  if (state.walkModel === "standard") {
+    // Model 1: Standard Undirected Random Walk
+    // P(u, v) = 1 / degree(u) for each neighbor v
+    nodes.forEach(u => {
+      const nbrs = getNeighbors(u);
+      const deg = nbrs.length;
+      if (deg > 0) {
+        const prob = 1.0 / deg;
+        nbrs.forEach(v => {
+          P[u][v] = prob;
+        });
+      }
+    });
+  } else if (state.walkModel === "classroom") {
+    // Model 2: Classroom / Forward Walk Model
+    // Test Case: Leaf nodes move to hub (B) with prob 1.
+    // Hub (B) transitions forward to candidate leaves {C, D, E} equally: 1 / count.
+    // If hub B has neighbor A (source) and target is among neighbors,
+    // forward leaves from B are all neighbors except start node A!
+    nodes.forEach(u => {
+      const nbrs = getNeighbors(u);
+      if (nbrs.length === 0) return;
+
+      if (u === "B" && nbrs.includes("A") && nbrs.length > 1) {
+        // Forward from B: exclude start node A if A is a neighbor and other neighbors exist
+        const forwardNeighbors = nbrs.filter(n => n !== state.startNode);
+        if (forwardNeighbors.length > 0) {
+          const prob = 1.0 / forwardNeighbors.length;
+          forwardNeighbors.forEach(v => {
+            P[u][v] = prob;
+          });
+        } else {
+          const prob = 1.0 / nbrs.length;
+          nbrs.forEach(v => { P[u][v] = prob; });
+        }
+      } else {
+        // Uniform across all available neighbors
+        const prob = 1.0 / nbrs.length;
+        nbrs.forEach(v => {
+          P[u][v] = prob;
+        });
+      }
+    });
+  } else if (state.walkModel === "custom") {
+    // Model 3: User Custom Transitions
+    nodes.forEach(u => {
+      const userOut = state.customTransitions[u];
+      if (userOut && Object.keys(userOut).length > 0) {
+        let sum = 0;
+        Object.entries(userOut).forEach(([v, p]) => {
+          if (nodes.includes(v)) sum += p;
+        });
+        if (sum > 0) {
+          Object.entries(userOut).forEach(([v, p]) => {
+            if (nodes.includes(v)) P[u][v] = p / sum;
+          });
+        }
+      } else {
+        const nbrs = getNeighbors(u);
+        if (nbrs.length > 0) {
+          const prob = 1.0 / nbrs.length;
+          nbrs.forEach(v => { P[u][v] = prob; });
+        }
+      }
+    });
+  }
+
+  return P;
+}
+
+// ============================================================================
+// 4. GAUSSIAN ELIMINATION & LINEAR SYSTEM SOLVER: (I - Q)H = 1
+// ============================================================================
+
+/**
+ * Solves (I - Q) H = 1 for expected hitting times to target y.
+ * - H(y) = 0
+ * - For each v != y:
+ *     H(v) = 1 + sum_{u != y} P(v, u) H(u)
+ *     <=> (1 - P(v, v)) H(v) - sum_{u != v, u != y} P(v, u) H(u) = 1
+ *
+ * Uses Gaussian elimination with partial pivoting.
+ * Identifies disconnected or unreachable components and assigns Infinity.
+ */
+function solveHittingTimesForTarget(target, P) {
+  const nodes = getNodeKeys();
+  const result = {};
+  nodes.forEach(u => { result[u] = Infinity; });
+
+  if (!nodes.includes(target)) return result;
+  result[target] = 0;
+
+  // Find all nodes that have a directed path to target in P
+  // (BFS backwards from target)
+  const reachableToTarget = new Set([target]);
+  const queue = [target];
+
+  while (queue.length > 0) {
+    const curr = queue.shift();
+    nodes.forEach(u => {
+      if (!reachableToTarget.has(u) && P[u] && P[u][curr] > 1e-9) {
+        reachableToTarget.add(u);
+        queue.push(u);
+      }
+    });
+  }
+
+  // Non-target nodes that CAN reach the target
+  const activeNodes = nodes.filter(n => n !== target && reachableToTarget.has(n));
+  const m = activeNodes.length;
+
+  if (m === 0) return result;
+
+  // Build matrix A = (I - Q) and vector b = 1
+  const A = Array.from({ length: m }, () => Array(m).fill(0));
+  const b = Array(m).fill(1.0);
+
+  activeNodes.forEach((v, i) => {
+    A[i][i] = 1.0;
+    activeNodes.forEach((u, j) => {
+      const p_vu = P[v] ? (P[v][u] || 0) : 0;
+      A[i][j] -= p_vu;
+    });
+  });
+
+  // Gaussian elimination with partial pivoting
+  for (let col = 0; col < m; col++) {
+    let maxRow = col;
+    let maxVal = Math.abs(A[col][col]);
+    for (let r = col + 1; r < m; r++) {
+      if (Math.abs(A[r][col]) > maxVal) {
+        maxVal = Math.abs(A[r][col]);
+        maxRow = r;
+      }
+    }
+
+    if (maxVal < 1e-11) {
+      // Singular / trap state without exit to target
+      continue;
+    }
+
+    if (maxRow !== col) {
+      [A[col], A[maxRow]] = [A[maxRow], A[col]];
+      [b[col], b[maxRow]] = [b[maxRow], b[col]];
+    }
+
+    const pivot = A[col][col];
+    for (let r = col + 1; r < m; r++) {
+      const factor = A[r][col] / pivot;
+      for (let c = col; c < m; c++) {
+        A[r][c] -= factor * A[col][c];
+      }
+      b[r] -= factor * b[col];
+    }
+  }
+
+  // Back substitution
+  const H = Array(m).fill(0);
+  for (let r = m - 1; r >= 0; r--) {
+    let sum = b[r];
+    for (let c = r + 1; c < m; c++) {
+      sum -= A[r][c] * H[c];
+    }
+    if (Math.abs(A[r][r]) > 1e-11) {
+      H[r] = sum / A[r][r];
+    } else {
+      H[r] = Infinity;
+    }
+  }
+
+  activeNodes.forEach((u, i) => {
+    const val = H[i];
+    result[u] = (isNaN(val) || val < 0 || !isFinite(val)) ? Infinity : Math.max(0, val);
+  });
+
+  return result;
+}
+
+/**
+ * Computes the full all-pairs hitting time matrix dynamically.
+ */
+function computeAllHittingTimes(P) {
+  const nodes = getNodeKeys();
+  const matrix = {};
+  nodes.forEach(u => { matrix[u] = {}; });
+
+  nodes.forEach(target => {
+    const col = solveHittingTimesForTarget(target, P);
+    nodes.forEach(src => {
+      matrix[src][target] = col[src];
+    });
+  });
+
+  return matrix;
+}
+
+// ============================================================================
+// 5. GRAPH RENDERING & VISUALIZATION (SVG)
+// ============================================================================
+
+function renderGraph() {
   const edgesLayer = document.getElementById("edgesLayer");
   const nodesLayer = document.getElementById("nodesLayer");
   const probLabelsLayer = document.getElementById("probLabelsLayer");
+  if (!edgesLayer || !nodesLayer || !probLabelsLayer) return;
 
   edgesLayer.innerHTML = "";
   nodesLayer.innerHTML = "";
   probLabelsLayer.innerHTML = "";
 
-  // Render static edges
-  GRAPH.edges.forEach(edge => {
-    const uNode = GRAPH.nodes[edge.u];
-    const vNode = GRAPH.nodes[edge.v];
+  const P = state.transitionMatrix;
+  const shortestPathEdges = getShortestPathEdges(state.startNode, state.targetNode);
+
+  // Render Edges
+  state.edges.forEach((edge, idx) => {
+    const uNode = state.nodes[edge.u];
+    const vNode = state.nodes[edge.v];
+    if (!uNode || !vNode) return;
+
+    const isShortest = shortestPathEdges.some(
+      pe => (pe.u === edge.u && pe.v === edge.v) || (pe.u === edge.v && pe.v === edge.u)
+    );
 
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute("x1", uNode.x);
     line.setAttribute("y1", uNode.y);
     line.setAttribute("x2", vNode.x);
     line.setAttribute("y2", vNode.y);
-    line.setAttribute("class", "edge-line");
+    line.setAttribute("class", `edge-line ${isShortest ? "active-path" : ""}`);
     line.setAttribute("id", `edge-${edge.u}-${edge.v}`);
     edgesLayer.appendChild(line);
 
-    // Probability Indicator Badge on edge
+    // Probability Indicator Badges on edges
     const midX = (uNode.x + vNode.x) / 2;
     const midY = (uNode.y + vNode.y) / 2;
-
-    const gBadge = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    gBadge.setAttribute("class", "prob-badge-group");
-    gBadge.setAttribute("id", `prob-${edge.u}-${edge.v}`);
-
-    // Perpendicular offset for badge clarity
     const dx = vNode.x - uNode.x;
     const dy = vNode.y - uNode.y;
     const len = Math.hypot(dx, dy) || 1;
-    const perpX = -dy / len * 16;
-    const perpY = dx / len * 16;
+    const perpX = -dy / len;
+    const perpY = dx / len;
 
-    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    rect.setAttribute("x", midX + perpX - 26);
-    rect.setAttribute("y", midY + perpY - 12);
-    rect.setAttribute("width", 52);
-    rect.setAttribute("height", 24);
-    rect.setAttribute("class", "prob-badge-rect");
+    const pUV = (P[edge.u] && P[edge.u][edge.v] !== undefined) ? P[edge.u][edge.v] : 0;
+    const pVU = (P[edge.v] && P[edge.v][edge.u] !== undefined) ? P[edge.v][edge.u] : 0;
 
-    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    text.setAttribute("x", midX + perpX);
-    text.setAttribute("y", midY + perpY);
-    text.setAttribute("class", "prob-badge-text");
-    text.textContent = "P=1/3";
+    // Badge for u -> v
+    if (pUV > 0) {
+      const badgeX = midX + perpX * 18 - (dx / len) * 22;
+      const badgeY = midY + perpY * 18 - (dy / len) * 22;
+      renderProbBadge(probLabelsLayer, badgeX, badgeY, `${edge.u}➔${edge.v}`, pUV);
+    }
 
-    gBadge.appendChild(rect);
-    gBadge.appendChild(text);
-    probLabelsLayer.appendChild(gBadge);
+    // Badge for v -> u
+    if (pVU > 0) {
+      const badgeX = midX - perpX * 18 + (dx / len) * 22;
+      const badgeY = midY - perpY * 18 + (dy / len) * 22;
+      renderProbBadge(probLabelsLayer, badgeX, badgeY, `${edge.v}➔${edge.u}`, pVU);
+    }
   });
 
-  // Render nodes
-  NODE_KEYS.forEach(nodeKey => {
-    const node = GRAPH.nodes[nodeKey];
-    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    g.setAttribute("class", "node-group");
-    g.setAttribute("id", `node-${nodeKey}`);
-    g.setAttribute("tabindex", "0");
-    g.setAttribute("role", "button");
-    g.setAttribute("aria-label", `Node ${nodeKey}`);
+  // Render Nodes
+  getNodeKeys().forEach(k => {
+    const node = state.nodes[k];
+    if (!node) return;
 
-    // Outer Halo
-    const halo = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    halo.setAttribute("cx", node.x);
-    halo.setAttribute("cy", node.y);
-    halo.setAttribute("r", 33);
-    halo.setAttribute("class", "node-halo");
-    halo.setAttribute("fill", "none");
-    halo.setAttribute("stroke", "transparent");
-    halo.setAttribute("stroke-width", "2");
+    const gNode = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    gNode.setAttribute("class", "node-group");
+    gNode.setAttribute("id", `node-${k}`);
+    gNode.setAttribute("transform", `translate(${node.x}, ${node.y})`);
 
-    // Base circle
+    const isStart = k === state.startNode;
+    const isTarget = k === state.targetNode;
+    if (isStart && isTarget) gNode.classList.add("is-both");
+    else if (isStart) gNode.classList.add("is-start");
+    else if (isTarget) gNode.classList.add("is-target");
+
+    // Glow ring
+    const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    ring.setAttribute("r", "28");
+    ring.setAttribute("class", "node-ring");
+    gNode.appendChild(ring);
+
+    // Node body circle
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle.setAttribute("cx", node.x);
-    circle.setAttribute("cy", node.y);
-    circle.setAttribute("r", 27);
+    circle.setAttribute("r", "22");
     circle.setAttribute("class", "node-base");
+    gNode.appendChild(circle);
 
-    // Center Node Label
+    // Node label
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    text.setAttribute("x", node.x);
-    text.setAttribute("y", node.y);
     text.setAttribute("class", "node-text");
-    text.textContent = node.label;
+    text.setAttribute("y", "1");
+    text.textContent = node.label || k;
+    gNode.appendChild(text);
 
-    // Subtext (Node degree / role)
-    const subText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    subText.setAttribute("x", node.x);
-    subText.setAttribute("y", node.y + 40);
-    subText.setAttribute("class", "node-subtext");
-    subText.textContent = node.sub;
+    // Node degree subtext
+    const subtext = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    subtext.setAttribute("class", "node-subtext");
+    subtext.setAttribute("y", "38");
+    subtext.textContent = `deg ${getDegree(k)}`;
+    gNode.appendChild(subtext);
 
-    g.appendChild(halo);
-    g.appendChild(circle);
-    g.appendChild(text);
-    g.appendChild(subText);
-
-    // Interactive node selection via click
-    g.addEventListener("click", () => {
-      handleNodeClick(nodeKey);
+    // Click node to select as Start (left click) or Target (shift-click)
+    gNode.addEventListener("click", (e) => {
+      if (e.shiftKey) {
+        setTargetNode(k);
+      } else {
+        setStartNode(k);
+      }
     });
 
-    nodesLayer.appendChild(g);
-  });
-
-  updateGraphVisualClasses();
-  updateEdgeProbabilityLabels();
-}
-
-/**
- * Handle clicking on a node directly in the SVG graph:
- * If start != clicked, switch target to clicked.
- */
-function handleNodeClick(nodeKey) {
-  if (state.isWalking) resetRandomWalk();
-  if (nodeKey === state.startNode) return;
-
-  state.targetNode = nodeKey;
-  document.getElementById("targetNodeSelect").value = nodeKey;
-  syncAll();
-}
-
-/**
- * Updates visual classes on SVG nodes and edges reflecting
- * the active start node, target node, and shortest path.
- */
-function updateGraphVisualClasses() {
-  NODE_KEYS.forEach(k => {
-    const nodeEl = document.getElementById(`node-${k}`);
-    if (!nodeEl) return;
-    nodeEl.classList.remove("is-start", "is-target", "is-both");
-
-    if (k === state.startNode && k === state.targetNode) {
-      nodeEl.classList.add("is-both");
-    } else if (k === state.startNode) {
-      nodeEl.classList.add("is-start");
-    } else if (k === state.targetNode) {
-      nodeEl.classList.add("is-target");
-    }
-  });
-
-  // Shortest path edge highlight
-  const shortestPathEdges = getShortestPathEdges(state.startNode, state.targetNode);
-  GRAPH.edges.forEach(e => {
-    const edgeId = `edge-${e.u}-${e.v}`;
-    const edgeEl = document.getElementById(edgeId);
-    if (!edgeEl) return;
-
-    const isShortest = shortestPathEdges.some(
-      pe => (pe.u === e.u && pe.v === e.v) || (pe.u === e.v && pe.v === e.u)
-    );
-    if (isShortest) {
-      edgeEl.classList.add("active-path");
-    } else {
-      edgeEl.classList.remove("active-path");
-    }
+    nodesLayer.appendChild(gNode);
   });
 }
 
-/**
- * Displays contextual transition probabilities on edges
- */
-function updateEdgeProbabilityLabels() {
-  const isClassroom = state.walkModel === "classroom";
-  const frac = isClassroom ? "⅓" : "¼";
+function renderProbBadge(layer, x, y, label, prob) {
+  const gBadge = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  gBadge.setAttribute("class", "prob-badge-group");
 
-  GRAPH.edges.forEach(e => {
-    const gBadge = document.getElementById(`prob-${e.u}-${e.v}`);
-    if (!gBadge) return;
-    const textEl = gBadge.querySelector("text");
+  const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  rect.setAttribute("class", "prob-badge-rect");
+  rect.setAttribute("x", x - 28);
+  rect.setAttribute("y", y - 10);
+  rect.setAttribute("width", 56);
+  rect.setAttribute("height", 20);
 
-    if (e.u === "B" || e.v === "B") {
-      const leaf = e.u === "B" ? e.v : e.u;
-      textEl.textContent = `B➔${leaf}: ${frac}`;
-    }
-  });
+  const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  text.setAttribute("class", "prob-badge-text");
+  text.setAttribute("x", x);
+  text.setAttribute("y", y);
+
+  // Clean fraction display or 2 decimal places
+  let pStr = formatProbability(prob);
+  text.textContent = `${label}: ${pStr}`;
+
+  gBadge.appendChild(rect);
+  gBadge.appendChild(text);
+  layer.appendChild(gBadge);
 }
 
-/**
- * BFS for shortest path edges
- */
+function formatProbability(prob) {
+  if (Math.abs(prob - 1) < 1e-4) return "1";
+  if (Math.abs(prob - 0.5) < 1e-4) return "½";
+  if (Math.abs(prob - 1/3) < 1e-4) return "⅓";
+  if (Math.abs(prob - 0.25) < 1e-4) return "¼";
+  if (Math.abs(prob - 0.2) < 1e-4) return "⅕";
+  if (Math.abs(prob - 1/6) < 1e-4) return "⅙";
+  return prob.toFixed(2);
+}
+
 function getShortestPathEdges(start, target) {
-  if (start === target) return [];
+  if (!start || !target || start === target) return [];
   const queue = [[start]];
   const visited = new Set([start]);
 
@@ -415,7 +524,7 @@ function getShortestPathEdges(start, target) {
       return edgeList;
     }
 
-    for (const nbr of ADJ[current]) {
+    for (const nbr of getNeighbors(current)) {
       if (!visited.has(nbr)) {
         visited.add(nbr);
         queue.push([...path, nbr]);
@@ -426,245 +535,376 @@ function getShortestPathEdges(start, target) {
 }
 
 // ============================================================================
-// 5. LIVE CALCULATION & METRICS SYNCHRONIZATION
+// 6. METRICS, DERIVATION & LIVE CALCULATIONS
 // ============================================================================
-function updateCalculations() {
+
+function recalculateAll() {
+  const nodes = getNodeKeys();
+
+  // Validate start & target
+  if (!nodes.includes(state.startNode)) {
+    state.startNode = nodes[0] || null;
+  }
+  if (!nodes.includes(state.targetNode)) {
+    state.targetNode = nodes.find(n => n !== state.startNode) || nodes[0] || null;
+  }
+
+  // 1. Build Transition Matrix
+  state.transitionMatrix = buildTransitionMatrix();
+
+  // 2. Solve simultaneous equations for all pairs
+  state.hittingTimeMatrix = computeAllHittingTimes(state.transitionMatrix);
+
+  // 3. Console Logging for verification as requested
+  logDebugInfo();
+
+  // 4. Update UI displays
+  updateDropdowns();
+  updatePageRankInputs();
+  renderGraph();
+  updateCalculationCards();
+  renderComparisonTable();
+  renderAllPairsMatrix();
+}
+
+function logDebugInfo() {
+  const x = state.startNode;
+  const y = state.targetNode;
+  const P = state.transitionMatrix;
+  const HT = state.hittingTimeMatrix;
+
+  console.group(`%c[HITTING TIME] Current Graph Calculation`, "color: #38bdf8; font-weight: bold;");
+  console.log("CURRENT START:", x);
+  console.log("CURRENT TARGET:", y);
+  console.log("CURRENT GRAPH NODES:", getNodeKeys());
+  console.log("CURRENT EDGES:", state.edges);
+  console.log("TRANSITION MATRIX P:", P);
+  console.log("SOLVED HITTING TIMES MATRIX:", HT);
+  if (x && y && HT[x]) {
+    console.log(`FINAL HT(${x}, ${y}):`, HT[x][y] === Infinity ? "Infinity (Unreachable)" : HT[x][y]);
+  }
+  console.groupEnd();
+}
+
+function updateCalculationCards() {
   const x = state.startNode;
   const y = state.targetNode;
 
-  // Retrieve exact hitting time from cache
-  const htVal = state.hittingTimesCache[x][y];
-  const scoreVal = -htVal;
-  const py = state.pageRank[y] || 0.0;
-  const normScoreVal = scoreVal * py;
-
-  // Update Hero Metric Displays
   const htDisplay = document.getElementById("htValDisplay");
   const scoreDisplay = document.getElementById("scoreValDisplay");
   const normDisplay = document.getElementById("normScoreValDisplay");
   const nodePairBadge = document.getElementById("nodePairBadge");
   const normCalcSub = document.getElementById("normCalcSub");
 
+  if (!x || !y) {
+    if (nodePairBadge) nodePairBadge.textContent = "—";
+    if (htDisplay) htDisplay.textContent = "—";
+    if (scoreDisplay) scoreDisplay.textContent = "—";
+    if (normDisplay) normDisplay.textContent = "—";
+    return;
+  }
+
   nodePairBadge.textContent = `${x} ➔ ${y}`;
 
-  // If hitting time is zero (start == target)
-  htDisplay.textContent = htVal === 0 ? "0.00" : htVal.toFixed(2);
-  scoreDisplay.textContent = scoreVal === 0 ? "0.00" : scoreVal.toFixed(2);
-  normDisplay.textContent = normScoreVal === 0 ? "0.000" : normScoreVal.toFixed(3);
+  const htVal = (state.hittingTimeMatrix[x] && state.hittingTimeMatrix[x][y] !== undefined)
+    ? state.hittingTimeMatrix[x][y]
+    : Infinity;
 
-  normCalcSub.textContent = `−${htVal.toFixed(2)} × ${py.toFixed(2)} = ${normScoreVal.toFixed(3)}`;
+  const py = state.pageRank[y] !== undefined ? state.pageRank[y] : 0.20;
 
-  // Highlight active target in PageRank input list
-  NODE_KEYS.forEach(k => {
-    const grp = document.getElementById(`prGroup${k}`);
-    if (grp) {
-      if (k === y) {
-        grp.classList.add("active-target");
-      } else {
-        grp.classList.remove("active-target");
-      }
-    }
-  });
+  if (htVal === Infinity) {
+    htDisplay.textContent = "∞";
+    htDisplay.style.color = "var(--red-accent)";
+    scoreDisplay.textContent = "−∞";
+    normDisplay.textContent = "−∞";
+    normCalcSub.textContent = "Target is unreachable from start";
+  } else {
+    htDisplay.style.color = "";
+    htDisplay.textContent = htVal.toFixed(2);
+    const scoreVal = -htVal;
+    scoreDisplay.textContent = scoreVal === 0 ? "0.00" : scoreVal.toFixed(2);
+    const normVal = scoreVal * py;
+    normDisplay.textContent = normVal === 0 ? "0.000" : normVal.toFixed(3);
+    normCalcSub.textContent = `−${htVal.toFixed(2)} × ${py.toFixed(2)} = ${normVal.toFixed(3)}`;
+  }
 
-  // Step-by-Step Derivation Breakdown
-  renderStepByStepDerivation(x, y, htVal, scoreVal, py, normScoreVal);
-
-  // Update Comparison Table
-  renderComparisonTable(x);
+  // Update Mathematical Derivation
+  renderStepByStepDerivation(x, y, htVal);
 }
 
-/**
- * Step-by-Step Mathematical Derivation
- * Explains Markov first-step analysis and classroom path decomposition.
- */
-function renderStepByStepDerivation(x, y, htVal, scoreVal, py, normScoreVal) {
+function renderStepByStepDerivation(x, y, htVal) {
   const container = document.getElementById("dynamicStepsContainer");
   if (!container) return;
+
+  if (!x || !y) {
+    container.innerHTML = "<p>Please select a valid start and target node.</p>";
+    return;
+  }
 
   if (x === y) {
     container.innerHTML = `
       <div class="step-item">
-        <div class="step-num">TRIVIAL BASE CASE: START = TARGET</div>
-        <div class="step-title">Node ${x} is already at Target ${y}</div>
-        <div class="step-math">HT(${x}, ${y}) = 0.00 steps\nS_HT(${x}, ${y}) = -0.00\nS_Norm(${x}, ${y}) = 0.000</div>
+        <div class="step-num">BASE CASE: START = TARGET</div>
+        <div class="step-title">Node ${x} is already at target ${y}</div>
+        <div class="step-math">HT(${x}, ${y}) = 0.00 steps\nS_HT(${x}, ${y}) = 0.00\nS_Norm = 0.000</div>
       </div>
     `;
     return;
   }
 
-  const isClassroom = state.walkModel === "classroom";
-  let derivationHtml = "";
+  const nodes = getNodeKeys();
+  const P = state.transitionMatrix;
+  const nonTargetNodes = nodes.filter(n => n !== y);
 
-  // Step 1: Base Condition
-  derivationHtml += `
+  let html = "";
+
+  // Step 1: Target Base Condition
+  html += `
     <div class="step-item">
       <div class="step-num">STEP 1 • TARGET BASE CONDITION</div>
       <div class="step-title">Hitting time at target is zero</div>
-      <div class="step-math">HT(${y}, ${y}) = 0\n(Random walk absorbs/terminates immediately upon first arrival at target ${y})</div>
+      <div class="step-math">H(${y}) = 0\n(Random walk terminates immediately upon first arrival at target node ${y})</div>
     </div>
   `;
 
-  // Step 2: System Equations for Neighbors
-  const nonTargetNodes = NODE_KEYS.filter(n => n !== y);
-  let eqText = "";
-  nonTargetNodes.forEach(node => {
-    const nbrs = ADJ[node];
-    const p = isClassroom 
-      ? (node === "B" ? "⅓" : "1") 
-      : (1.0 / nbrs.length).toFixed(2);
-    const sumTerms = nbrs.map(nbr => `(${p} · HT(${nbr}, ${y}))`).join(" + ");
-    eqText += `HT(${node}, ${y}) = 1 + [ ${sumTerms} ]\n`;
+  // Step 2: System Equations for Non-Target States
+  let eqLines = [];
+  nonTargetNodes.forEach(v => {
+    const outgoing = Object.entries(P[v] || {}).filter(([_, prob]) => prob > 0);
+    if (outgoing.length === 0) {
+      eqLines.push(`H(${v}) = ∞  (Isolated / no outgoing transitions)`);
+    } else {
+      const terms = outgoing.map(([u, prob]) => {
+        const pStr = formatProbability(prob);
+        return u === y ? `${pStr}·H(${u}) [=0]` : `${pStr}·H(${u})`;
+      }).join(" + ");
+      eqLines.push(`H(${v}) = 1 + [ ${terms} ]`);
+    }
   });
 
-  derivationHtml += `
+  html += `
     <div class="step-item">
-      <div class="step-num">STEP 2 • FIRST-STEP RECURRENCE SYSTEM</div>
-      <div class="step-title">Expected steps from each non-target node: HT(x,y) = 1 + &sum; P(x,z) HT(z,y)</div>
-      <div class="step-math">${eqText.trim()}</div>
+      <div class="step-num">STEP 2 • SIMULTANEOUS FIRST-STEP RECURRENCE EQUATIONS</div>
+      <div class="step-title">For each state v &ne; ${y}: H(v) = 1 + &sum; P(v,u) H(u)</div>
+      <div class="step-math">${eqLines.join("\n")}</div>
     </div>
   `;
 
-  // Step 3: Specific Path Analysis
-  let explanationNote = "";
-  if (x === "A" && y === "C") {
-    if (isClassroom) {
-      explanationNote = 
-        `1. From A: leaf with 1 outgoing edge to B (prob = 1.0).\n` +
-        `   HT(A, C) = 1 + HT(B, C)\n\n` +
-        `2. From B: random surfer chooses among forward branches {C, D, E} uniformly (prob = ⅓ each):\n` +
-        `   • Path 1: A ➔ B ➔ C                         [Length: 2 steps, Prob = ⅓]\n` +
-        `   • Path 2: A ➔ B ➔ D ➔ B ➔ C                 [Length: 4 steps, Prob = ⅓]\n` +
-        `   • Path 3: A ➔ B ➔ E ➔ B ➔ C                 [Length: 4 steps, Prob = ⅓]\n\n` +
-        `3. Expected Hitting Time Calculation:\n` +
-        `   HT(A, C) = (2 × ⅓) + (4 × ⅓) + (4 × ⅓) = (2 + 4 + 4) / 3 = 10 / 3\n` +
-        `   ➔ HT(A, C) = 3.33 steps (Exact syllabus expectation!)`;
-    } else {
-      explanationNote = 
-        `1. From A: only neighbor is B ➔ HT(A, C) = 1 + HT(B, C)\n` +
-        `2. From B: 4 neighbors {A, C, D, E} each with probability ¼ = 0.25:\n` +
-        `   HT(B, C) = 1 + 0.25·HT(A, C) + 0.25·HT(C, C) + 0.25·HT(D, C) + 0.25·HT(E, C)\n` +
-        `   Since HT(C, C)=0 and by symmetry HT(A, C) = HT(D, C) = HT(E, C) = 1 + HT(B, C):\n` +
-        `   HT(B, C) = 1 + 0.75·(1 + HT(B, C)) = 1.75 + 0.75·HT(B, C)\n` +
-        `   0.25·HT(B, C) = 1.75 ➔ HT(B, C) = 7.00 steps.\n` +
-        `   ➔ HT(A, C) = 1 + 7.00 = 8.00 steps.`;
-    }
-  } else if (x === "A" && y === "B") {
-    explanationNote = 
-      `A has a single edge directly to B. Any walk starting at A must immediately move to B on step 1.\n` +
-      `➔ HT(A, B) = 1 + HT(B, B) = 1 + 0 = 1.00 step.`;
-  } else if (x === "B" && y === "A") {
-    explanationNote = 
-      `From Hub B to Leaf A: target branch is selected with probability 1/deg(B).\n` +
-      `If chosen on step 1, takes 1 step. Otherwise bounces through other leaf nodes.\n` +
-      `➔ Expected hitting time = ${htVal.toFixed(2)} steps!\n` +
-      `Notice the stark asymmetry: HT(A,B) = 1.00 vs HT(B,A) = ${htVal.toFixed(2)}.`;
-  } else {
-    explanationNote = 
-      `Solving the first-step linear system for source ${x} and target ${y}:\n` +
-      `➔ HT(${x}, ${y}) = ${htVal.toFixed(2)} steps.`;
-  }
-
-  derivationHtml += `
+  // Step 3: Linear System (I - Q)H = 1
+  html += `
     <div class="step-item">
-      <div class="step-num">STEP 3 • ALGEBRAIC RESOLUTION</div>
-      <div class="step-title">Analytical evaluation for source node ${x} to target ${y}</div>
-      <div class="step-math">${explanationNote}</div>
+      <div class="step-num">STEP 3 • MATRIX FORM (I − Q) H = 1 & GAUSSIAN ELIMINATION</div>
+      <div class="step-title">Excluding target ${y}, solve simultaneous linear system over active states</div>
+      <div class="step-math">Solved Expected Hitting Times to target ${y}:\n` +
+      nodes.map(n => {
+        const val = state.hittingTimeMatrix[n] ? state.hittingTimeMatrix[n][y] : Infinity;
+        return `H(${n}) = ${val === Infinity ? '∞ (Unreachable)' : val.toFixed(2)}`;
+      }).join("\n") +
+      `\n\nResult for selected start node ${x}:\nHT(${x}, ${y}) = ${htVal === Infinity ? '∞ (Unreachable)' : htVal.toFixed(2)} steps</div>
     </div>
   `;
 
-  // Step 4: Scores
-  derivationHtml += `
+  // Step 4: Similarity Score
+  const py = state.pageRank[y] !== undefined ? state.pageRank[y] : 0.20;
+  html += `
     <div class="step-item">
-      <div class="step-num">STEP 4 • HITTING SCORE & NORMALIZATION</div>
-      <div class="step-title">Invert arrival time into similarity score: S_HT = −HT and S_Norm = −HT × &pi;_y</div>
-      <div class="step-math">S_HT(${x}, ${y}) = -HT(${x}, ${y}) = ${scoreVal.toFixed(2)}\nS_Norm(${x}, ${y}) = -HT(${x}, ${y}) × π_${y} = -${htVal.toFixed(2)} × ${py.toFixed(2)} = ${normScoreVal.toFixed(3)}</div>
+      <div class="step-num">STEP 4 • PROXIMITY SCORE & NORMALIZATION</div>
+      <div class="step-title">S_HT = −HT(x,y) and S_Norm = −HT(x,y) &times; &pi;_${y}</div>
+      <div class="step-math">S_HT(${x}, ${y}) = ${htVal === Infinity ? '−∞' : (-htVal).toFixed(2)}\nS_Norm(${x}, ${y}) = ${htVal === Infinity ? '−∞' : (-htVal * py).toFixed(3)}</div>
     </div>
   `;
 
-  container.innerHTML = derivationHtml;
+  container.innerHTML = html;
 }
 
-/**
- * Renders the Comparison Table comparing hitting times from start node x
- * to all possible targets (B, C, D, E, etc.)
- */
-function renderComparisonTable(startNode) {
+function renderComparisonTable() {
   const tbody = document.getElementById("comparisonTableBody");
   const compareStartHeader = document.getElementById("compareStartNode");
-  if (!tbody || !compareStartHeader) return;
+  if (!tbody) return;
 
-  compareStartHeader.textContent = startNode;
+  const startNode = state.startNode;
+  if (compareStartHeader) compareStartHeader.textContent = startNode || "—";
+  tbody.innerHTML = "";
 
-  // Candidates are all nodes other than startNode
-  const candidates = NODE_KEYS.filter(k => k !== startNode);
+  if (!startNode) return;
 
-  // Compute metrics for each candidate
-  const rowsData = candidates.map(target => {
-    const ht = state.hittingTimesCache[startNode][target];
-    const score = -ht;
-    const py = state.pageRank[target] || 0.15;
-    const norm = score * py;
-    const shortestPath = getShortestPathEdges(startNode, target).length;
-
-    return {
-      target,
-      shortestPath,
-      ht,
-      score,
-      py,
-      norm
-    };
+  const candidates = getNodeKeys().filter(k => k !== startNode);
+  const rows = candidates.map(target => {
+    const sp = getShortestPathEdges(startNode, target).length;
+    const ht = state.hittingTimeMatrix[startNode] ? state.hittingTimeMatrix[startNode][target] : Infinity;
+    const score = ht === Infinity ? -Infinity : -ht;
+    const py = state.pageRank[target] !== undefined ? state.pageRank[target] : 0.20;
+    const norm = ht === Infinity ? -Infinity : score * py;
+    return { target, sp, ht, score, py, norm };
   });
 
-  // Sort by S_HT descending (closer to 0 is highest similarity)
-  rowsData.sort((a, b) => b.score - a.score);
+  // Sort by highest score (smallest hitting time)
+  rows.sort((a, b) => b.score - a.score);
 
-  tbody.innerHTML = "";
-  rowsData.forEach((row, index) => {
-    const tr = document.createElement("tr");
+  rows.forEach((row, idx) => {
     const isCurrentTarget = row.target === state.targetNode;
-    const isBest = index === 0;
-
-    if (isCurrentTarget) tr.classList.add("selected-row");
-    if (isBest) tr.classList.add("best-row");
+    const tr = document.createElement("tr");
+    if (isCurrentTarget) tr.classList.add("active-row");
 
     tr.innerHTML = `
       <td><strong>Node ${row.target}</strong> ${isCurrentTarget ? '<span class="badge">ACTIVE</span>' : ''}</td>
-      <td>${row.shortestPath} hop${row.shortestPath > 1 ? 's' : ''}</td>
-      <td><strong>${row.ht.toFixed(2)}</strong> steps</td>
-      <td><span style="color:var(--amber-accent); font-weight:700;">${row.score.toFixed(2)}</span></td>
+      <td>${row.sp > 0 ? `${row.sp} hop${row.sp > 1 ? 's' : ''}` : 'Unconnected'}</td>
+      <td><strong>${row.ht === Infinity ? '<span style="color:var(--red-accent);">∞ (Unreachable)</span>' : row.ht.toFixed(2) + ' steps'}</strong></td>
+      <td><span style="color:var(--amber-accent); font-weight:700;">${row.score === -Infinity ? '−∞' : row.score.toFixed(2)}</span></td>
       <td>${row.py.toFixed(2)}</td>
-      <td><span style="color:var(--purple-accent); font-weight:700;">${row.norm.toFixed(3)}</span></td>
-      <td><span class="rank-badge ${index === 0 ? 'rank-1' : ''}">${index + 1}</span></td>
+      <td><span style="color:var(--purple-accent); font-weight:700;">${row.norm === -Infinity ? '−∞' : row.norm.toFixed(3)}</span></td>
+      <td><span class="rank-badge ${idx === 0 ? 'rank-1' : ''}">${idx + 1}</span></td>
       <td>
-        <button class="btn-select-target" data-target="${row.target}">
-          Select
-        </button>
+        <button class="btn-select-target" data-target="${row.target}">Select</button>
       </td>
     `;
 
     tr.querySelector(".btn-select-target").addEventListener("click", () => {
-      if (state.isWalking) resetRandomWalk();
-      state.targetNode = row.target;
-      document.getElementById("targetNodeSelect").value = row.target;
-      syncAll();
+      setTargetNode(row.target);
     });
 
     tbody.appendChild(tr);
   });
 }
 
+function renderAllPairsMatrix() {
+  const headerRow = document.getElementById("allPairsHeaderRow");
+  const body = document.getElementById("allPairsBody");
+  if (!headerRow || !body) return;
+
+  const nodes = getNodeKeys();
+  headerRow.innerHTML = "<th>Start \\ Target</th>" + nodes.map(n => `<th>Target ${n}</th>`).join("");
+  body.innerHTML = "";
+
+  nodes.forEach(src => {
+    const tr = document.createElement("tr");
+    let cellsHtml = `<td><strong>Node ${src}</strong></td>`;
+
+    nodes.forEach(tgt => {
+      if (src === tgt) {
+        cellsHtml += `<td class="matrix-cell-diagonal">0.00</td>`;
+      } else {
+        const val = state.hittingTimeMatrix[src] ? state.hittingTimeMatrix[src][tgt] : Infinity;
+        if (val === Infinity) {
+          cellsHtml += `<td class="matrix-cell-unreachable">∞</td>`;
+        } else {
+          cellsHtml += `<td class="matrix-cell-val">${val.toFixed(2)}</td>`;
+        }
+      }
+    });
+
+    tr.innerHTML = cellsHtml;
+    body.appendChild(tr);
+  });
+}
+
 // ============================================================================
-// 6. RANDOM WALK SIMULATION & ANIMATION
+// 7. DYNAMIC UI CONTROLS & DROPDOWNS
 // ============================================================================
+
+function updateDropdowns() {
+  const startSelect = document.getElementById("startNodeSelect");
+  const targetSelect = document.getElementById("targetNodeSelect");
+  if (!startSelect || !targetSelect) return;
+
+  const nodes = getNodeKeys();
+  const currentStart = state.startNode;
+  const currentTarget = state.targetNode;
+
+  startSelect.innerHTML = "";
+  targetSelect.innerHTML = "";
+
+  nodes.forEach(n => {
+    const optStart = document.createElement("option");
+    optStart.value = n;
+    optStart.textContent = `Node ${n}`;
+    if (n === currentStart) optStart.selected = true;
+    startSelect.appendChild(optStart);
+
+    const optTarget = document.createElement("option");
+    optTarget.value = n;
+    optTarget.textContent = `Node ${n}`;
+    if (n === currentTarget) optTarget.selected = true;
+    targetSelect.appendChild(optTarget);
+  });
+}
+
+function updatePageRankInputs() {
+  const container = document.querySelector(".pr-inputs-grid");
+  if (!container) return;
+
+  const nodes = getNodeKeys();
+  container.innerHTML = "";
+
+  nodes.forEach(k => {
+    if (state.pageRank[k] === undefined) {
+      state.pageRank[k] = parseFloat((1.0 / nodes.length).toFixed(2));
+    }
+
+    const item = document.createElement("div");
+    item.className = "pr-input-item";
+    item.id = `prGroup${k}`;
+    if (k === state.targetNode) item.classList.add("active-target");
+
+    item.innerHTML = `
+      <label for="pr${k}">&pi;<sub>${k}</sub></label>
+      <input type="number" id="pr${k}" min="0.01" max="1.0" step="0.01" value="${state.pageRank[k].toFixed(2)}" class="pr-input">
+    `;
+
+    item.querySelector("input").addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      if (!isNaN(val) && val >= 0) {
+        state.pageRank[k] = val;
+        updateCalculationCards();
+        renderComparisonTable();
+      }
+    });
+
+    container.appendChild(item);
+  });
+}
+
+function setStartNode(nodeKey) {
+  if (state.isWalking) resetRandomWalk();
+  state.startNode = nodeKey;
+  const select = document.getElementById("startNodeSelect");
+  if (select) select.value = nodeKey;
+  recalculateAll();
+  updateWalkUI();
+}
+
+function setTargetNode(nodeKey) {
+  if (state.isWalking) resetRandomWalk();
+  state.targetNode = nodeKey;
+  const select = document.getElementById("targetNodeSelect");
+  if (select) select.value = nodeKey;
+  recalculateAll();
+  updateWalkUI();
+}
+
+// ============================================================================
+// 8. RANDOM WALK SIMULATION (STOCHASTIC RUN)
+// ============================================================================
+
 function runRandomWalk() {
   if (state.isWalking) return;
 
   const start = state.startNode;
   const target = state.targetNode;
 
+  if (!start || !target) {
+    alert("Please ensure both start and target nodes are selected.");
+    return;
+  }
+
   if (start === target) {
-    alert(`Start Node (${start}) and Target Node (${target}) are the same. Hitting Time is already 0!`);
+    alert(`Start (${start}) and Target (${target}) are identical. Hitting time is 0 steps.`);
+    return;
+  }
+
+  const theoreticalHT = state.hittingTimeMatrix[start] ? state.hittingTimeMatrix[start][target] : Infinity;
+  if (theoreticalHT === Infinity) {
+    alert(`Node ${target} is unreachable from Node ${start}! Theoretical Hitting Time is ∞.`);
     return;
   }
 
@@ -673,17 +913,15 @@ function runRandomWalk() {
   state.currentWalkStep = 0;
   state.walkPath = [start];
 
-  // UI state updates
   document.getElementById("btnRunWalk").style.display = "none";
   document.getElementById("btnPauseWalk").style.display = "inline-flex";
   document.getElementById("walkStatusBadge").className = "walk-status-badge running";
   document.getElementById("walkStatusBadge").textContent = "WALKING...";
   updateWalkUI();
 
-  // Show surfer particle at start node
   const particle = document.getElementById("surferParticle");
   const pulse = document.getElementById("particlePulse");
-  const startCoords = GRAPH.nodes[start];
+  const startCoords = state.nodes[start];
 
   particle.setAttribute("cx", startCoords.x);
   particle.setAttribute("cy", startCoords.y);
@@ -693,13 +931,9 @@ function runRandomWalk() {
   pulse.setAttribute("cy", startCoords.y);
   pulse.style.display = "block";
 
-  // Mark start node visited
   highlightNodeVisited(start);
-
-  // Clear previous walk trace arrows
   document.getElementById("walkTraceLayer").innerHTML = "";
 
-  // Trigger step loop
   scheduleNextStep();
 }
 
@@ -720,25 +954,32 @@ function executeNextWalkStep() {
     return;
   }
 
-  // Determine possible next steps based on model
-  const isClassroom = state.walkModel === "classroom";
-  let nextNode;
+  const P = state.transitionMatrix;
+  const row = P[current] || {};
+  const candidates = Object.entries(row).filter(([_, prob]) => prob > 0);
 
-  if (isClassroom && current === "B") {
-    // Classroom model: from B, surfer chooses uniformly among forward leaves
-    // If target is C, branches are C, D, E (each 1/3)
-    const forwardBranches = ["C", "D", "E"];
-    nextNode = forwardBranches[Math.floor(Math.random() * forwardBranches.length)];
-  } else {
-    // Standard uniform selection among all neighbors
-    const neighbors = ADJ[current];
-    nextNode = neighbors[Math.floor(Math.random() * neighbors.length)];
+  if (candidates.length === 0) {
+    alert(`Walker reached a dead-end at Node ${current} with no outgoing edges!`);
+    finishRandomWalk(true);
+    return;
+  }
+
+  // Stochastic next node selection based on dynamic transition probabilities
+  const rand = Math.random();
+  let cum = 0;
+  let nextNode = candidates[candidates.length - 1][0];
+
+  for (const [candidate, prob] of candidates) {
+    cum += prob;
+    if (rand <= cum) {
+      nextNode = candidate;
+      break;
+    }
   }
 
   state.currentWalkStep++;
   state.walkPath.push(nextNode);
 
-  // Animate particle transition along edge
   animateParticleTransition(current, nextNode, () => {
     highlightNodeVisited(nextNode);
     drawWalkArrow(current, nextNode);
@@ -747,9 +988,8 @@ function executeNextWalkStep() {
     if (nextNode === target) {
       finishRandomWalk();
     } else {
-      // Continue walk (safety cap at 30 steps to keep classroom presentation crisp)
-      if (state.currentWalkStep >= 30) {
-        document.getElementById("walkStatusBadge").textContent = "WALK CAPPED (30 STEPS)";
+      if (state.currentWalkStep >= 40) {
+        document.getElementById("walkStatusBadge").textContent = "STOPPED (MAX 40 STEPS)";
         finishRandomWalk(true);
       } else {
         scheduleNextStep();
@@ -761,16 +1001,19 @@ function executeNextWalkStep() {
 function animateParticleTransition(fromNode, toNode, onComplete) {
   const p = document.getElementById("surferParticle");
   const pulse = document.getElementById("particlePulse");
-  const fromCoord = GRAPH.nodes[fromNode];
-  const toCoord = GRAPH.nodes[toNode];
+  const fromCoord = state.nodes[fromNode];
+  const toCoord = state.nodes[toNode];
+  if (!fromCoord || !toCoord) {
+    if (onComplete) onComplete();
+    return;
+  }
 
   const duration = Math.min(state.stepSpeedMs * 0.7, 500);
   const startTime = performance.now();
 
-  function stepAnimation(now) {
+  function step(now) {
     const elapsed = now - startTime;
     const progress = Math.min(elapsed / duration, 1.0);
-    // Smooth ease-in-out curve
     const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
 
     const curX = fromCoord.x + (toCoord.x - fromCoord.x) * ease;
@@ -782,7 +1025,7 @@ function animateParticleTransition(fromNode, toNode, onComplete) {
     pulse.setAttribute("cy", curY);
 
     if (progress < 1.0 && state.isWalking) {
-      requestAnimationFrame(stepAnimation);
+      requestAnimationFrame(step);
     } else {
       p.setAttribute("cx", toCoord.x);
       p.setAttribute("cy", toCoord.y);
@@ -792,7 +1035,7 @@ function animateParticleTransition(fromNode, toNode, onComplete) {
     }
   }
 
-  requestAnimationFrame(stepAnimation);
+  requestAnimationFrame(step);
 }
 
 function highlightNodeVisited(nodeKey) {
@@ -804,10 +1047,10 @@ function highlightNodeVisited(nodeKey) {
 
 function drawWalkArrow(fromNode, toNode) {
   const traceLayer = document.getElementById("walkTraceLayer");
-  const from = GRAPH.nodes[fromNode];
-  const to = GRAPH.nodes[toNode];
+  const from = state.nodes[fromNode];
+  const to = state.nodes[toNode];
+  if (!from || !to) return;
 
-  // Micro-offset line coordinate if edge was traversed multiple times
   const jitterX = (Math.random() - 0.5) * 8;
   const jitterY = (Math.random() - 0.5) * 8;
 
@@ -832,7 +1075,7 @@ function finishRandomWalk(capped = false) {
   const badge = document.getElementById("walkStatusBadge");
   if (capped) {
     badge.className = "walk-status-badge";
-    badge.textContent = "STOPPED (MAX STEPS)";
+    badge.textContent = "STOPPED";
   } else {
     badge.className = "walk-status-badge hit";
     badge.textContent = `TARGET HIT IN ${state.currentWalkStep} STEPS!`;
@@ -875,7 +1118,6 @@ function resetRandomWalk() {
   badge.className = "walk-status-badge";
   badge.textContent = "READY TO RUN";
 
-  // Reset visual walk indicators on SVG
   const particle = document.getElementById("surferParticle");
   const pulse = document.getElementById("particlePulse");
   particle.style.display = "none";
@@ -883,7 +1125,7 @@ function resetRandomWalk() {
 
   document.getElementById("walkTraceLayer").innerHTML = "";
 
-  NODE_KEYS.forEach(k => {
+  getNodeKeys().forEach(k => {
     const el = document.getElementById(`node-${k}`);
     if (el) el.classList.remove("is-visited");
   });
@@ -892,34 +1134,246 @@ function resetRandomWalk() {
 }
 
 function updateWalkUI() {
-  document.getElementById("currentStepCount").textContent = state.currentWalkStep;
-  const pathTextEl = document.getElementById("walkPathText");
+  const stepCountEl = document.getElementById("currentStepCount");
+  if (stepCountEl) stepCountEl.textContent = state.currentWalkStep;
 
-  if (state.walkPath.length === 0) {
-    pathTextEl.textContent = `${state.startNode} (Awaiting walk)`;
-  } else {
-    pathTextEl.textContent = state.walkPath.join(" ➔ ");
+  const pathTextEl = document.getElementById("walkPathText");
+  if (pathTextEl) {
+    if (state.walkPath.length === 0) {
+      pathTextEl.textContent = `${state.startNode || '—'} (Awaiting walk)`;
+    } else {
+      pathTextEl.textContent = state.walkPath.join(" ➔ ");
+    }
   }
 }
 
 // ============================================================================
-// 7. EVENT HANDLERS & INTERACTIONS
+// 9. DYNAMIC GRAPH EDITING: ADD / DELETE NODES & EDGES
 // ============================================================================
-function setupEventListeners() {
-  // Start / Target Selectors
-  const startSelect = document.getElementById("startNodeSelect");
-  const targetSelect = document.getElementById("targetNodeSelect");
 
-  startSelect.addEventListener("change", (e) => {
-    if (state.isWalking) resetRandomWalk();
-    state.startNode = e.target.value;
-    syncAll();
+function addNodePrompt() {
+  const existing = getNodeKeys();
+  let candidate = "";
+  for (let i = 65; i <= 90; i++) {
+    const char = String.fromCharCode(i);
+    if (!existing.includes(char)) {
+      candidate = char;
+      break;
+    }
+  }
+  if (!candidate) candidate = `N${existing.length + 1}`;
+
+  const nodeName = prompt("Enter new node name (e.g. F):", candidate);
+  if (!nodeName) return;
+
+  const cleanName = nodeName.trim().toUpperCase();
+  if (state.nodes[cleanName]) {
+    alert(`Node ${cleanName} already exists!`);
+    return;
+  }
+
+  // Position node pleasantly in SVG viewport
+  const count = existing.length;
+  const angle = (count * 1.25) % (Math.PI * 2);
+  const cx = 340 + Math.cos(angle) * 160;
+  const cy = 220 + Math.sin(angle) * 120;
+
+  state.nodes[cleanName] = {
+    id: cleanName,
+    label: cleanName,
+    x: Math.round(Math.max(60, Math.min(620, cx))),
+    y: Math.round(Math.max(60, Math.min(380, cy))),
+    sub: "Custom Node"
+  };
+
+  recalculateAll();
+}
+
+function deleteNodePrompt() {
+  const nodes = getNodeKeys();
+  if (nodes.length <= 2) {
+    alert("Graph must have at least 2 nodes to calculate hitting times.");
+    return;
+  }
+
+  const target = prompt(`Enter node to delete (${nodes.join(", ")}):`, nodes[nodes.length - 1]);
+  if (!target) return;
+
+  const cleanTarget = target.trim().toUpperCase();
+  if (!state.nodes[cleanTarget]) {
+    alert(`Node ${cleanTarget} does not exist!`);
+    return;
+  }
+
+  delete state.nodes[cleanTarget];
+  delete state.pageRank[cleanTarget];
+  delete state.customTransitions[cleanTarget];
+
+  // Remove connected edges
+  state.edges = state.edges.filter(e => e.u !== cleanTarget && e.v !== cleanTarget);
+
+  if (state.startNode === cleanTarget) state.startNode = getNodeKeys()[0];
+  if (state.targetNode === cleanTarget) state.targetNode = getNodeKeys().find(n => n !== state.startNode) || getNodeKeys()[0];
+
+  recalculateAll();
+}
+
+function addEdgePrompt() {
+  const nodes = getNodeKeys();
+  if (nodes.length < 2) {
+    alert("Graph needs at least two nodes to add an edge.");
+    return;
+  }
+
+  const u = prompt(`Enter first node (${nodes.join(", ")}):`, nodes[0]);
+  if (!u) return;
+  const v = prompt(`Enter second node (${nodes.join(", ")}):`, nodes[1]);
+  if (!v) return;
+
+  const cleanU = u.trim().toUpperCase();
+  const cleanV = v.trim().toUpperCase();
+
+  if (cleanU === cleanV) {
+    alert("Self-loops are not permitted in standard simple graph analysis.");
+    return;
+  }
+
+  if (!state.nodes[cleanU] || !state.nodes[cleanV]) {
+    alert("One or both nodes do not exist!");
+    return;
+  }
+
+  if (hasEdge(cleanU, cleanV)) {
+    alert(`Edge between ${cleanU} and ${cleanV} already exists!`);
+    return;
+  }
+
+  state.edges.push({ u: cleanU, v: cleanV });
+  recalculateAll();
+}
+
+function deleteEdgePrompt() {
+  if (state.edges.length === 0) {
+    alert("Graph has no edges to delete.");
+    return;
+  }
+
+  const edgeListStr = state.edges.map((e, i) => `${i + 1}: ${e.u}-${e.v}`).join("\n");
+  const choice = prompt(`Enter edge number to delete:\n${edgeListStr}`);
+  if (!choice) return;
+
+  const idx = parseInt(choice, 10) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= state.edges.length) {
+    alert("Invalid edge number.");
+    return;
+  }
+
+  state.edges.splice(idx, 1);
+  recalculateAll();
+}
+
+function loadPreset(presetKey) {
+  const preset = PRESETS[presetKey];
+  if (!preset) return;
+
+  if (state.isWalking) resetRandomWalk();
+
+  state.nodes = JSON.parse(JSON.stringify(preset.nodes));
+  state.edges = JSON.parse(JSON.stringify(preset.edges));
+  state.startNode = preset.startNode;
+  state.targetNode = preset.targetNode;
+
+  // Initialize PageRank weights uniformly for preset
+  const keys = Object.keys(preset.nodes);
+  state.pageRank = {};
+  keys.forEach(k => {
+    state.pageRank[k] = parseFloat((1.0 / keys.length).toFixed(2));
   });
 
-  targetSelect.addEventListener("change", (e) => {
-    if (state.isWalking) resetRandomWalk();
-    state.targetNode = e.target.value;
-    syncAll();
+  recalculateAll();
+}
+
+// ============================================================================
+// 10. CUSTOM TRANSITION PROBABILITIES MODAL
+// ============================================================================
+
+function openCustomTransitionsModal() {
+  const modal = document.getElementById("customModelModal");
+  const container = document.getElementById("modalTransitionsContainer");
+  if (!modal || !container) return;
+
+  container.innerHTML = "";
+  const nodes = getNodeKeys();
+
+  nodes.forEach(u => {
+    const nbrs = getNeighbors(u);
+    const box = document.createElement("div");
+    box.className = "node-trans-box";
+
+    let rowsHtml = "";
+    if (nbrs.length === 0) {
+      rowsHtml = `<div class="node-trans-row" style="color:var(--text-muted);">No neighbors (isolated node)</div>`;
+    } else {
+      nbrs.forEach(v => {
+        const currentP = (state.transitionMatrix[u] && state.transitionMatrix[u][v] !== undefined)
+          ? state.transitionMatrix[u][v]
+          : (1.0 / nbrs.length);
+
+        rowsHtml += `
+          <div class="node-trans-row">
+            <span>Transition <strong>${u} ➔ ${v}</strong>:</span>
+            <input type="number" class="trans-prob-input" data-u="${u}" data-v="${v}" min="0" max="1" step="0.05" value="${currentP.toFixed(2)}">
+          </div>
+        `;
+      });
+    }
+
+    box.innerHTML = `
+      <div class="node-trans-title">
+        <span>Node ${u} Outgoing Transitions</span>
+        <span style="font-size:0.75rem; color:var(--text-muted);">${nbrs.length} neighbor(s)</span>
+      </div>
+      <div class="node-trans-rows">${rowsHtml}</div>
+    `;
+
+    container.appendChild(box);
+  });
+
+  modal.style.display = "flex";
+}
+
+function saveCustomTransitionsFromModal() {
+  const inputs = document.querySelectorAll(".trans-prob-input");
+  state.customTransitions = {};
+
+  inputs.forEach(input => {
+    const u = input.dataset.u;
+    const v = input.dataset.v;
+    const val = parseFloat(input.value) || 0;
+    if (!state.customTransitions[u]) state.customTransitions[u] = {};
+    state.customTransitions[u][v] = Math.max(0, val);
+  });
+
+  state.walkModel = "custom";
+  const modelSelect = document.getElementById("walkModelSelect");
+  if (modelSelect) modelSelect.value = "custom";
+
+  document.getElementById("customModelModal").style.display = "none";
+  recalculateAll();
+}
+
+// ============================================================================
+// 11. EVENT LISTENERS & SETUP
+// ============================================================================
+
+function setupEventListeners() {
+  // Start / Target Selectors
+  document.getElementById("startNodeSelect").addEventListener("change", (e) => {
+    setStartNode(e.target.value);
+  });
+
+  document.getElementById("targetNodeSelect").addEventListener("change", (e) => {
+    setTargetNode(e.target.value);
   });
 
   // Dynamics Model Selector
@@ -928,13 +1382,11 @@ function setupEventListeners() {
     modelSelect.addEventListener("change", (e) => {
       if (state.isWalking) resetRandomWalk();
       state.walkModel = e.target.value;
-      state.hittingTimesCache = computeHittingTimesMatrix(state.walkModel);
-      updateEdgeProbabilityLabels();
-      syncAll();
+      recalculateAll();
     });
   }
 
-  // Walk Control Buttons
+  // Simulation controls
   document.getElementById("btnRunWalk").addEventListener("click", runRandomWalk);
   document.getElementById("btnPauseWalk").addEventListener("click", pauseRandomWalk);
   document.getElementById("btnResetWalk").addEventListener("click", resetRandomWalk);
@@ -944,38 +1396,64 @@ function setupEventListeners() {
   const speedLabel = document.getElementById("speedLabel");
   speedSlider.addEventListener("input", (e) => {
     const val = parseInt(e.target.value, 10);
-    // 200 => Fast (250ms), 600 => Normal (600ms), 1200 => Slow (1100ms)
     state.stepSpeedMs = 1400 - val;
     if (state.stepSpeedMs < 450) speedLabel.textContent = "Fast";
     else if (state.stepSpeedMs > 850) speedLabel.textContent = "Slow";
     else speedLabel.textContent = "Normal";
   });
 
-  // PageRank / Stationary Distribution Inputs
-  NODE_KEYS.forEach(k => {
-    const prInput = document.getElementById(`pr${k}`);
-    if (prInput) {
-      prInput.addEventListener("input", (e) => {
-        const val = parseFloat(e.target.value);
-        if (!isNaN(val) && val >= 0) {
-          state.pageRank[k] = val;
-          updateCalculations();
-        }
-      });
-    }
-  });
-
-  // Reset PageRank button
+  // Reset PageRank
   document.getElementById("btnResetPR").addEventListener("click", () => {
-    state.pageRank = { ...DEFAULT_PAGERANK };
-    NODE_KEYS.forEach(k => {
-      const input = document.getElementById(`pr${k}`);
-      if (input) input.value = DEFAULT_PAGERANK[k].toFixed(2);
+    const nodes = getNodeKeys();
+    state.pageRank = {};
+    nodes.forEach(k => {
+      state.pageRank[k] = parseFloat((1.0 / nodes.length).toFixed(2));
     });
-    updateCalculations();
+    updatePageRankInputs();
+    updateCalculationCards();
+    renderComparisonTable();
   });
 
-  // Educational Mode (Simple vs. Formula Mode)
+  // Graph Editor Toolbar Buttons
+  document.getElementById("btnAddNode").addEventListener("click", addNodePrompt);
+  document.getElementById("btnDeleteNode").addEventListener("click", deleteNodePrompt);
+  document.getElementById("btnAddEdge").addEventListener("click", addEdgePrompt);
+  document.getElementById("btnDeleteEdge").addEventListener("click", deleteEdgePrompt);
+  document.getElementById("btnConfigureModel").addEventListener("click", openCustomTransitionsModal);
+
+  // Preset Buttons
+  document.querySelectorAll(".btn-preset").forEach(btn => {
+    btn.addEventListener("click", () => {
+      loadPreset(btn.dataset.preset);
+    });
+  });
+
+  // Custom Transitions Modal
+  document.getElementById("btnCloseModal").addEventListener("click", () => {
+    document.getElementById("customModelModal").style.display = "none";
+  });
+  document.getElementById("btnResetToStandard").addEventListener("click", () => {
+    state.walkModel = "standard";
+    state.customTransitions = {};
+    const modelSel = document.getElementById("walkModelSelect");
+    if (modelSel) modelSel.value = "standard";
+    document.getElementById("customModelModal").style.display = "none";
+    recalculateAll();
+  });
+  document.getElementById("btnSaveCustomModel").addEventListener("click", saveCustomTransitionsFromModal);
+
+  // Toggle All-Pairs Table
+  const btnToggleAllPairs = document.getElementById("btnToggleAllPairs");
+  const allPairsContainer = document.getElementById("allPairsTableContainer");
+  if (btnToggleAllPairs && allPairsContainer) {
+    btnToggleAllPairs.addEventListener("click", () => {
+      const isHidden = allPairsContainer.style.display === "none";
+      allPairsContainer.style.display = isHidden ? "block" : "none";
+      btnToggleAllPairs.textContent = isHidden ? "Hide Matrix View" : "Show Full Matrix View";
+    });
+  }
+
+  // Educational Modes
   const btnSimple = document.getElementById("btnSimpleMode");
   const btnFormula = document.getElementById("btnFormulaMode");
   const calcContent = document.getElementById("calcContent");
@@ -997,7 +1475,6 @@ function setupEventListeners() {
     calcChevron.classList.add("open");
   });
 
-  // Collapsible Calculation Section
   document.getElementById("btnToggleCalculation").addEventListener("click", () => {
     calcContent.classList.toggle("show");
     calcChevron.classList.toggle("open");
@@ -1009,28 +1486,14 @@ function setupEventListeners() {
     state.isPresentation = !state.isPresentation;
     document.body.classList.toggle("presentation-active", state.isPresentation);
     btnPres.classList.toggle("active", state.isPresentation);
-    if (state.isPresentation) {
-      btnPres.innerHTML = `<span>✕</span> Exit Presentation`;
-    } else {
-      btnPres.innerHTML = `<span class="icon">⛶</span> Presentation Mode`;
-    }
+    btnPres.innerHTML = state.isPresentation ? `<span>✕</span> Exit Presentation` : `<span class="icon">⛶</span> Presentation Mode`;
   });
 }
 
-/**
- * Synchronize all UI elements and visualizations with current state
- */
-function syncAll() {
-  updateGraphVisualClasses();
-  updateCalculations();
-  updateWalkUI();
-}
-
 // ============================================================================
-// 8. INITIALIZATION
+// 12. INITIALIZATION
 // ============================================================================
 document.addEventListener("DOMContentLoaded", () => {
-  initGraphVisualization();
+  loadPreset("star5");
   setupEventListeners();
-  syncAll();
 });

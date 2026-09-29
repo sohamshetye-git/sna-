@@ -64,8 +64,9 @@
       <div class="model-mode-selector">
         <label for="walkModelSelect"><span class="indicator">⚙</span> RANDOM WALK DYNAMICS:</label>
         <select id="walkModelSelect" class="styled-select select-compact">
-          <option value="classroom" selected>Classroom Model (Forward from B: C,D,E = 1/3 each ➔ HT=3.33)</option>
-          <option value="full">Full Markov Random Walk (Uniform 4-way at B: A,C,D,E = 1/4 each ➔ HT=8.00)</option>
+          <option value="standard" selected>Standard Undirected Random Walk (P(v,u) = 1/degree(v))</option>
+          <option value="classroom">Classroom / Forward Walk Model (Forward from B: C,D,E uniform)</option>
+          <option value="custom">Custom Transition Matrix (User Defined)</option>
         </select>
       </div>
 
@@ -95,13 +96,43 @@
         <div class="card-header">
           <div class="card-title-group">
             <h2 class="card-title">NETWORK TOPOLOGY & PROBABILITIES</h2>
-            <span class="card-tag">Undirected Graph G=(V,E) • Uniform Surfer</span>
+            <span class="card-tag" id="networkSubtitle">Undirected Graph G=(V,E) • Uniform Surfer</span>
           </div>
           <div class="graph-legend">
             <span class="leg-item"><span class="leg-dot start"></span> Start (x)</span>
             <span class="leg-item"><span class="leg-dot target"></span> Target (y)</span>
             <span class="leg-item"><span class="leg-dot visited"></span> Visited</span>
             <span class="leg-item"><span class="leg-dot shortest"></span> Direct / Min Path</span>
+          </div>
+        </div>
+
+        <!-- GRAPH EDITOR & PRESET TOOLBAR -->
+        <div class="graph-editor-toolbar">
+          <div class="editor-buttons-row">
+            <button id="btnAddNode" class="btn-tool" title="Add a new node to the graph">
+              <span>➕ Node</span>
+            </button>
+            <button id="btnDeleteNode" class="btn-tool" title="Delete a selected node">
+              <span>🗑️ Delete Node</span>
+            </button>
+            <button id="btnAddEdge" class="btn-tool" title="Add an edge between two nodes">
+              <span>🔗 Add Edge</span>
+            </button>
+            <button id="btnDeleteEdge" class="btn-tool" title="Remove an edge">
+              <span>✂️ Delete Edge</span>
+            </button>
+            <button id="btnConfigureModel" class="btn-tool btn-tool-accent" title="Customize transition probabilities per node">
+              <span>⚙️ Custom Transitions</span>
+            </button>
+          </div>
+
+          <div class="presets-row">
+            <span class="presets-label">Preset Topologies:</span>
+            <button class="btn-preset" data-preset="star5" title="Classic 5-node star graph (A-B, B-C, B-D, B-E)">Star (5 nodes)</button>
+            <button class="btn-preset" data-preset="line3" title="3-node line (A-B-C)">3-Node Line</button>
+            <button class="btn-preset" data-preset="line4" title="4-node line (A-B-C-D)">4-Node Line</button>
+            <button class="btn-preset" data-preset="triangle" title="Triangle 3-node clique (A-B-C)">Triangle</button>
+            <button class="btn-preset" data-preset="disconnected" title="Disconnected components for testing unreachable states">Disconnected</button>
           </div>
         </div>
 
@@ -322,7 +353,52 @@
       </div>
     </section>
 
-    <!-- EDUCATIONAL INTUITION & KEY TAKEAWAYS -->
+    <!-- ALL-PAIRS HITTING TIME MATRIX TABLE -->
+    <section class="card all-pairs-card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <h2 class="card-title">ALL-PAIRS EXPECTED HITTING TIME MATRIX</h2>
+          <span class="card-tag">HT(Start, Target) for every pair in current graph G</span>
+        </div>
+        <button id="btnToggleAllPairs" class="btn-secondary btn-sm">Toggle Full Matrix View</button>
+      </div>
+
+      <div class="table-responsive" id="allPairsTableContainer">
+        <table class="comparison-table" id="allPairsTable">
+          <thead>
+            <tr id="allPairsHeaderRow">
+              <!-- Dynamically populated -->
+            </tr>
+          </thead>
+          <tbody id="allPairsBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CUSTOM TRANSITIONS MODAL -->
+    <div id="customModelModal" class="modal-backdrop" style="display:none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Custom / Classroom Outgoing Transition Probabilities</h3>
+          <button id="btnCloseModal" class="btn-close-modal">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-intro">
+            Specify which outgoing neighbors are permitted from each node and their probabilities.
+            Probabilities are automatically normalized to sum to 1.0 (e.g. 3 uniform choices &rarr; 1/3 each, 4 &rarr; 1/4 each).
+          </p>
+          <div id="modalTransitionsContainer" class="modal-transitions-grid">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btnResetToStandard" class="btn-secondary">Reset to Standard Degree (1/deg)</button>
+          <button id="btnSaveCustomModel" class="btn-primary">Apply & Save Transitions</button>
+        </div>
+      </div>
+    </div>
     <section class="card intuition-card">
       <h2 class="card-title">CORE INTUITION & THEORETICAL SUMMARY</h2>
       <div class="intuition-flow">
